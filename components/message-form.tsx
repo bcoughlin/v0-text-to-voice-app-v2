@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/character-counter"
 import { PhoneInput } from "@/components/phone-input"
 import { VoiceSettings } from "@/components/voice-settings"
-import type { VoiceSetting, OpenAIVoice, OpenAIModel } from "@/types"
+import type { VoiceSetting, OpenAIModel, VoiceProvider } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 import { useSearchParams } from "next/navigation"
@@ -20,8 +20,9 @@ interface MessageFormProps {
 export function MessageForm({ voiceSettings }: MessageFormProps) {
   const [message, setMessage] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [voice, setVoice] = useState<OpenAIVoice>("alloy")
+  const [voice, setVoice] = useState<string>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
+  const [provider, setProvider] = useState<VoiceProvider>("openai")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
@@ -66,6 +67,7 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
     formData.append("phoneNumber", phoneNumber)
     formData.append("voiceName", voice)
     formData.append("voiceModel", model)
+    formData.append("voiceProvider", provider)
 
     try {
       const result = await makeCall(formData)
@@ -112,8 +114,10 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
           voiceSettings={voiceSettings}
           defaultVoice={voice}
           defaultModel={model}
+          defaultProvider={provider}
           onVoiceChange={setVoice}
           onModelChange={setModel}
+          onProviderChange={setProvider}
         />
       </div>
 

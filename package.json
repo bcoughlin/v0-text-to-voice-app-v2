@@ -61,7 +61,8 @@
     "ws": "latest",
     "@supabase/supabase-js": "latest",
     "twilio": "latest",
-    "openai": "latest"
+    "openai": "latest",
+    "elevenlabs-node": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/character-counter"
 import { VoiceSettings } from "@/components/voice-settings"
-import type { VoiceSetting, OpenAIVoice, OpenAIModel } from "@/types"
+import type { VoiceSetting, OpenAIModel, VoiceProvider } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Play, Square } from "lucide-react"
 
@@ -14,8 +14,9 @@ interface VoiceTestProps {
 
 export function VoiceTest({ voiceSettings }: VoiceTestProps) {
   const [message, setMessage] = useState("")
-  const [voice, setVoice] = useState<OpenAIVoice>("alloy")
+  const [voice, setVoice] = useState<string>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
+  const [provider, setProvider] = useState<VoiceProvider>("openai")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -34,7 +35,10 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
     setIsGenerating(true)
 
     try {
-      const response = await fetch("/api/text-to-speech", {
+      // Choose the appropriate API endpoint based on the provider
+      const endpoint = provider === "openai" ? "/api/text-to-speech" : "/api/elevenlabs-tts"
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,13 +46,13 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
         body: JSON.stringify({
           text: message,
           voice,
-          model,
+          model: provider === "openai" ? model : undefined,
         }),
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || "Failed to generate speech")
+        throw new Error(error.error || `Failed to generate speech with ${provider}`)
       }
 
       const audioBlob = await response.blob()
@@ -97,8 +101,10 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
           voiceSettings={voiceSettings}
           defaultVoice={voice}
           defaultModel={model}
+          defaultProvider={provider}
           onVoiceChange={setVoice}
           onModelChange={setModel}
+          onProviderChange={setProvider}
         />
       </div>
 

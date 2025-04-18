@@ -48,7 +48,7 @@ export default function HomePage() {
       } else {
         toast({
           title: "Success!",
-          description: "Your call has been initiated. You should receive it shortly.",
+          description: "Your call has been initiated with ElevenLabs voice. You should receive it shortly.",
         })
       }
     } catch (error: any) {
@@ -82,7 +82,7 @@ export default function HomePage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Calling...
+                Calling with ElevenLabs...
               </>
             ) : (
               "Call me"

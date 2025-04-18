@@ -28,3 +28,13 @@ export interface User {
 
 export type OpenAIVoice = "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer"
 export type OpenAIModel = "tts-1" | "tts-1-hd"
+
+export type ElevenLabsVoice = "Adam" | "Antoni" | "Arnold" | "Bella" | "Domi" | "Elli" | "Josh" | "Rachel" | "Sam"
+
+export type VoiceProvider = "openai" | "elevenlabs"
+
+export interface VoiceOption {
+  id: string
+  name: string
+  provider: VoiceProvider
+}

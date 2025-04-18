@@ -12,8 +12,8 @@ export async function makeQuickCall(phoneNumber: string) {
 
   // Predefined message
   const body = "Hello. You just requested I call you from Brad's website. Hope you are doing great today. Cheers!"
-  const voiceName = "alloy" // Default voice
-  const voiceModel = "tts-1" // Default model
+  const voiceName = "Rachel" // Using ElevenLabs voice for better quality
+  const voiceProvider = "elevenlabs" // Using ElevenLabs for the quick call
 
   // Validate input
   if (!phoneNumber) {
@@ -53,7 +53,7 @@ export async function makeQuickCall(phoneNumber: string) {
 
     try {
       // Create webhook URLs using hardcoded base URL
-      const twimlUrl = `${BASE_URL}/api/twiml?messageId=${message.id}&voice=${voiceName}`
+      const twimlUrl = `${BASE_URL}/api/twiml?messageId=${message.id}&voice=${voiceName}&provider=${voiceProvider}`
       console.log("TwiML URL:", twimlUrl)
 
       const statusCallbackUrl = `${BASE_URL}/api/call-status?messageId=${message.id}`

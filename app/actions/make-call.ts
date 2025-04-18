@@ -15,6 +15,7 @@ export async function makeCall(formData: FormData) {
   const toNumber = formData.get("phoneNumber") as string
   const voiceName = (formData.get("voiceName") as string) || "alloy"
   const voiceModel = (formData.get("voiceModel") as string) || "tts-1"
+  const voiceProvider = (formData.get("voiceProvider") as string) || "openai"
 
   // Validate input
   if (!body || !toNumber) {
@@ -59,7 +60,7 @@ export async function makeCall(formData: FormData) {
 
     try {
       // Create webhook URLs using hardcoded base URL
-      const twimlUrl = `${BASE_URL}/api/twiml?messageId=${message.id}&voice=${voiceName}`
+      const twimlUrl = `${BASE_URL}/api/twiml?messageId=${message.id}&voice=${voiceName}&provider=${voiceProvider}`
       console.log("TwiML URL:", twimlUrl)
 
       const statusCallbackUrl = `${BASE_URL}/api/call-status?messageId=${message.id}`
