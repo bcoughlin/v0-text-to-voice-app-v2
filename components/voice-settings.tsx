@@ -1,18 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import type { VoiceSetting, OpenAIModel, VoiceProvider } from "@/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 interface VoiceSettingsProps {
   voiceSettings: VoiceSetting[]
   defaultVoice?: string
   defaultModel?: OpenAIModel
   defaultProvider?: VoiceProvider
+  defaultAgentId?: string
   onVoiceChange: (voice: string) => void
   onModelChange: (model: OpenAIModel) => void
   onProviderChange: (provider: VoiceProvider) => void
+  onAgentIdChange?: (agentId: string) => void
 }
 
 export function VoiceSettings({
@@ -20,13 +25,24 @@ export function VoiceSettings({
   defaultVoice = "alloy",
   defaultModel = "tts-1",
   defaultProvider = "openai",
+  defaultAgentId = "",
   onVoiceChange,
   onModelChange,
   onProviderChange,
+  onAgentIdChange,
 }: VoiceSettingsProps) {
   const [voice, setVoice] = useState<string>(defaultVoice)
   const [model, setModel] = useState<OpenAIModel>(defaultModel)
   const [provider, setProvider] = useState<VoiceProvider>(defaultProvider)
+  const [agentId, setAgentId] = useState<string>(defaultAgentId)
+
+  // Update state when props change
+  useEffect(() => {
+    setVoice(defaultVoice)
+    setModel(defaultModel)
+    setProvider(defaultProvider)
+    setAgentId(defaultAgentId)
+  }, [defaultVoice, defaultModel, defaultProvider, defaultAgentId])
 
   const handleVoiceChange = (value: string) => {
     setVoice(value)
@@ -49,8 +65,16 @@ export function VoiceSettings({
       setVoice("alloy")
       onVoiceChange("alloy")
     } else if (newProvider === "elevenlabs") {
-      setVoice("Adam")
-      onVoiceChange("Adam")
+      setVoice("Rachel")
+      onVoiceChange("Rachel")
+    }
+  }
+
+  const handleAgentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newAgentId = e.target.value
+    setAgentId(newAgentId)
+    if (onAgentIdChange) {
+      onAgentIdChange(newAgentId)
     }
   }
 
@@ -65,6 +89,7 @@ export function VoiceSettings({
           <SelectContent>
             <SelectItem value="openai">OpenAI</SelectItem>
             <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+            <SelectItem value="elevenlabs-agent">ElevenLabs Conversational Agent</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -122,6 +147,21 @@ export function VoiceSettings({
               <SelectItem value="Sam">Sam</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {provider === "elevenlabs-agent" && (
+        <div className="space-y-2">
+          <Label htmlFor="agentId">ElevenLabs Agent ID</Label>
+          <Input
+            id="agentId"
+            value={agentId}
+            onChange={handleAgentIdChange}
+            placeholder="Enter your ElevenLabs Agent ID"
+          />
+          <p className="text-xs text-gray-500">
+            You can find your Agent ID in the ElevenLabs dashboard under Projects.
+          </p>
         </div>
       )}
     </div>

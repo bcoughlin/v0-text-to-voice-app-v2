@@ -2,9 +2,7 @@
 
 import { getServerClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
-
-// Hardcoded base URL to ensure consistency
-const BASE_URL = "https://talkto.brad.llc"
+import { createWebhookUrl } from "@/lib/url-utils"
 
 export async function makeCall(formData: FormData) {
   console.log("Starting makeCall server action")
@@ -16,14 +14,29 @@ export async function makeCall(formData: FormData) {
   const voiceName = (formData.get("voiceName") as string) || "alloy"
   const voiceModel = (formData.get("voiceModel") as string) || "tts-1"
   const voiceProvider = (formData.get("voiceProvider") as string) || "openai"
+  const agentId = formData.get("agentId") as string
 
   // Validate input
-  if (!body || !toNumber) {
+  if (voiceProvider !== "elevenlabs-agent" && (!body || !toNumber)) {
     console.error("Validation error: Message and phone number are required")
     return { error: "Message and phone number are required" }
   }
 
-  if (body.length > 300) {
+  if (voiceProvider === "elevenlabs-agent" && !toNumber) {
+    console.error("Validation error: Phone number is required")
+    return { error: "Phone number is required" }
+  }
+
+  // For agent calls, use default agent ID if not provided
+  const effectiveAgentId =
+    voiceProvider === "elevenlabs-agent" ? agentId || process.env.ELEVENLABS_DEFAULT_AGENT_ID : null
+
+  if (voiceProvider === "elevenlabs-agent" && !effectiveAgentId) {
+    console.error("Validation error: No agent ID provided or configured")
+    return { error: "No agent ID provided or configured" }
+  }
+
+  if (voiceProvider !== "elevenlabs-agent" && body.length > 300) {
     console.error("Validation error: Message too long", { length: body.length })
     return { error: "Message must be 300 characters or less" }
   }
@@ -44,7 +57,7 @@ export async function makeCall(formData: FormData) {
     const { data: message, error } = await supabase
       .from("messages")
       .insert({
-        body,
+        body: voiceProvider === "elevenlabs-agent" ? "AI Agent Conversation" : body,
         to_number: fullPhoneNumber,
         status: "pending",
       })
@@ -59,11 +72,28 @@ export async function makeCall(formData: FormData) {
     console.log("Message created in database:", { messageId: message.id })
 
     try {
-      // Create webhook URLs using hardcoded base URL
-      const twimlUrl = `${BASE_URL}/api/twiml?messageId=${message.id}&voice=${voiceName}&provider=${voiceProvider}`
+      // Create webhook URLs based on provider
+      let twimlUrl
+
+      if (voiceProvider === "elevenlabs-agent") {
+        // For agent calls, use the conversation TwiML endpoint
+        twimlUrl = createWebhookUrl("/api/twiml-conversation", {
+          agentId: effectiveAgentId as string,
+        })
+      } else {
+        // For regular calls, use the standard TwiML endpoint
+        twimlUrl = createWebhookUrl("/api/twiml", {
+          messageId: message.id,
+          voice: voiceName,
+          provider: voiceProvider,
+        })
+      }
+
       console.log("TwiML URL:", twimlUrl)
 
-      const statusCallbackUrl = `${BASE_URL}/api/call-status?messageId=${message.id}`
+      const statusCallbackUrl = createWebhookUrl("/api/call-status", {
+        messageId: message.id,
+      })
       console.log("Status callback URL:", statusCallbackUrl)
 
       // Verify Twilio phone number is set
@@ -71,9 +101,9 @@ export async function makeCall(formData: FormData) {
         throw new Error("TWILIO_PHONE_NUMBER environment variable is not set")
       }
 
-      // Make the call using our API route instead of direct Twilio SDK
+      // Make the call using our API route
       console.log("Initiating Twilio call via API route...")
-      const response = await fetch(`${BASE_URL}/api/make-call`, {
+      const response = await fetch(createWebhookUrl("/api/make-call"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,7 +135,7 @@ export async function makeCall(formData: FormData) {
         .eq("id", message.id)
 
       console.log("Message status updated to in-progress")
-      revalidatePath("/")
+      revalidatePath("/text-to-voice")
       return { success: true, message }
     } catch (error: any) {
       console.error("Twilio error:", error)
@@ -120,7 +150,7 @@ export async function makeCall(formData: FormData) {
         .eq("id", message.id)
 
       console.log("Message status updated to failed")
-      revalidatePath("/")
+      revalidatePath("/text-to-voice")
       return { error: error.message || "Failed to make call" }
     }
   } catch (error: any) {

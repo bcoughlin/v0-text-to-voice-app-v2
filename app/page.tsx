@@ -65,9 +65,14 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-10 flex flex-col items-center">
       <h1 className="text-4xl font-bold text-center">Home Page</h1>
-      <Link href="/text-to-voice" className="mt-4 text-blue-600 hover:text-blue-800 hover:underline text-lg">
-        Text to Voice
-      </Link>
+      <div className="flex flex-col items-center gap-2 mt-4">
+        <Link href="/text-to-voice" className="text-blue-600 hover:text-blue-800 hover:underline text-lg">
+          Text to Voice
+        </Link>
+        <Link href="/test-agent" className="text-blue-600 hover:text-blue-800 hover:underline text-lg">
+          Test ElevenLabs Agent
+        </Link>
+      </div>
 
       <div className="mt-8 w-full max-w-md">
         <form onSubmit={handleSubmit} className="space-y-4">

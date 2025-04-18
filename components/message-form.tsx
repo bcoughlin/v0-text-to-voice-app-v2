@@ -23,6 +23,7 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
   const [voice, setVoice] = useState<string>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
   const [provider, setProvider] = useState<VoiceProvider>("openai")
+  const [agentId, setAgentId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
@@ -42,7 +43,8 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!message.trim()) {
+    // For agent calls, we don't need a message
+    if (provider !== "elevenlabs-agent" && !message.trim()) {
       toast({
         title: "Message is required",
         description: "Please enter a message to send",
@@ -60,6 +62,16 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
       return
     }
 
+    // For agent calls, we need an agent ID
+    if (provider === "elevenlabs-agent" && !agentId.trim()) {
+      toast({
+        title: "Agent ID is required",
+        description: "Please enter your ElevenLabs Agent ID",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     const formData = new FormData()
@@ -68,6 +80,10 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
     formData.append("voiceName", voice)
     formData.append("voiceModel", model)
     formData.append("voiceProvider", provider)
+
+    if (provider === "elevenlabs-agent") {
+      formData.append("agentId", agentId)
+    }
 
     try {
       const result = await makeCall(formData)
@@ -81,7 +97,10 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
       } else {
         toast({
           title: "Success",
-          description: "Your voice call has been initiated",
+          description:
+            provider === "elevenlabs-agent"
+              ? "Your call with the AI agent has been initiated"
+              : "Your voice call has been initiated",
         })
 
         // Reset form
@@ -101,9 +120,11 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <CharacterCounter value={message} onChange={setMessage} maxLength={300} />
-      </div>
+      {provider !== "elevenlabs-agent" && (
+        <div className="space-y-2">
+          <CharacterCounter value={message} onChange={setMessage} maxLength={300} />
+        </div>
+      )}
 
       <div className="space-y-2">
         <PhoneInput value={phoneNumber} onChange={setPhoneNumber} />
@@ -115,9 +136,11 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
           defaultVoice={voice}
           defaultModel={model}
           defaultProvider={provider}
+          defaultAgentId={agentId}
           onVoiceChange={setVoice}
           onModelChange={setModel}
           onProviderChange={setProvider}
+          onAgentIdChange={setAgentId}
         />
       </div>
 
@@ -125,8 +148,10 @@ export function MessageForm({ voiceSettings }: MessageFormProps) {
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Initiating call...
+            {provider === "elevenlabs-agent" ? "Initiating agent call..." : "Initiating call..."}
           </>
+        ) : provider === "elevenlabs-agent" ? (
+          "Start Agent Call"
         ) : (
           "Make Voice Call"
         )}
