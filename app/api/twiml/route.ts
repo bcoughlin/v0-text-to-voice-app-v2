@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerClient } from "@/lib/supabase"
 
-// Define BASE_URL at the top of the file
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-
 // Handle GET requests (for testing in browser)
 export async function GET(request: NextRequest) {
   return handleTwiMLRequest(request)
@@ -73,75 +70,39 @@ async function handleTwiMLRequest(request: NextRequest) {
 
     console.log("Message found:", { messageId, bodyLength: message.body.length })
 
-    // Generate TwiML based on the provider
+    // For ElevenLabs, we'll use Twilio's built-in TTS for now
+    // Map voice to Twilio voice
+    let twilioVoice = "alice"
     if (provider === "elevenlabs") {
-      // For ElevenLabs, we'll use Twilio's <Play> verb to play a pre-generated audio file
-      // First, we need to generate the audio file using ElevenLabs API
-      try {
-        // Generate a unique filename for this message
-        const audioFilename = `message_${messageId}.mp3`
-        const audioUrl = `${BASE_URL}/api/audio/${audioFilename}`
-
-        // Generate the audio file using ElevenLabs API and store it temporarily
-        await generateAndStoreAudio(message.body, voice, audioFilename)
-
-        // Return TwiML that plays the audio file
-        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Play>${audioUrl}</Play>
-</Response>`
-
-        console.log("Generated TwiML response with ElevenLabs audio")
-        return new NextResponse(twiml, {
-          headers: {
-            "Content-Type": "text/xml",
-          },
-        })
-      } catch (error) {
-        console.error("Error generating ElevenLabs audio:", error)
-        // Fallback to standard Twilio TTS
-        const twilioVoice = "alice" // Default fallback voice
-        const escapedMessage = message.body.replace(/[<>&]/g, (c) => {
-          return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] || c
-        })
-
-        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="${twilioVoice}">${escapedMessage}</Say>
-</Response>`
-
-        console.log("Generated fallback TwiML response")
-        return new NextResponse(twiml, {
-          headers: {
-            "Content-Type": "text/xml",
-          },
-        })
+      // Map ElevenLabs voices to Twilio voices (simple mapping)
+      if (voice === "Adam" || voice === "Antoni" || voice === "Arnold" || voice === "Josh" || voice === "Sam") {
+        twilioVoice = "man"
+      } else if (voice === "Bella" || voice === "Domi" || voice === "Elli" || voice === "Rachel") {
+        twilioVoice = "woman"
       }
     } else {
-      // For OpenAI, use Twilio's built-in TTS
-      // Map OpenAI voice to Twilio voice
-      let twilioVoice = "alice"
+      // Map OpenAI voices to Twilio voices
       if (voice === "alloy" || voice === "echo") twilioVoice = "alice"
       if (voice === "fable" || voice === "onyx") twilioVoice = "man"
       if (voice === "nova" || voice === "shimmer") twilioVoice = "woman"
+    }
 
-      // Generate TwiML to play the audio
-      const escapedMessage = message.body.replace(/[<>&]/g, (c) => {
-        return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] || c
-      })
+    // Generate TwiML to play the audio
+    const escapedMessage = message.body.replace(/[<>&]/g, (c) => {
+      return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] || c
+    })
 
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="${twilioVoice}">${escapedMessage}</Say>
 </Response>`
 
-      console.log("Generated TwiML response with OpenAI voice mapping")
-      return new NextResponse(twiml, {
-        headers: {
-          "Content-Type": "text/xml",
-        },
-      })
-    }
+    console.log("Generated TwiML response")
+    return new NextResponse(twiml, {
+      headers: {
+        "Content-Type": "text/xml",
+      },
+    })
   } catch (error) {
     console.error("TwiML Error:", error)
     // Return a valid TwiML response even in case of error
@@ -157,18 +118,4 @@ async function handleTwiMLRequest(request: NextRequest) {
       },
     )
   }
-}
-
-// Helper function to generate and store audio using ElevenLabs
-async function generateAndStoreAudio(text: string, voice: string, filename: string) {
-  // This is a placeholder function - in a real implementation, you would:
-  // 1. Call the ElevenLabs API to generate the audio
-  // 2. Store the audio file somewhere accessible (e.g., S3, Vercel Blob Storage)
-  // 3. Return the URL to the stored audio file
-
-  // For now, we'll just log that this would happen
-  console.log(`Would generate audio for text: "${text}" with voice: ${voice} and store as ${filename}`)
-
-  // In a real implementation, you would return the URL to the stored audio file
-  return `https://example.com/audio/${filename}`
 }

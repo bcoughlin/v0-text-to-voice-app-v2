@@ -1,14 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { Voice } from "elevenlabs-node"
-import { createClient } from "@supabase/supabase-js"
-
-// Hardcoded base URL to ensure consistency
-const BASE_URL = "https://talkto.brad.llc"
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const getServerClient = () => createClient(supabaseUrl, supabaseKey)
+import { VoiceGenerator } from "elevenlabs-node"
+import { getServerClient } from "@/lib/supabase"
 
 export async function GET(request: NextRequest, { params }: { params: { filename: string } }) {
   try {
@@ -40,17 +32,16 @@ export async function GET(request: NextRequest, { params }: { params: { filename
       return NextResponse.json({ error: "ElevenLabs API key is not configured" }, { status: 500 })
     }
 
-    // Initialize ElevenLabs Voice
-    const elevenLabsVoice = new Voice({
+    // Initialize ElevenLabs Voice Generator
+    const voiceGenerator = new VoiceGenerator({
       apiKey: process.env.ELEVENLABS_API_KEY,
-      voiceId: getElevenLabsVoiceId(voice),
     })
 
     // Generate speech using ElevenLabs
-    const audioResponse = await elevenLabsVoice.textToSpeech(message.body)
+    const audioResponse = await voiceGenerator.generateVoice(message.body, getElevenLabsVoiceId(voice))
 
     // Return the audio file
-    return new NextResponse(audioResponse, {
+    return new NextResponse(Buffer.from(audioResponse), {
       headers: {
         "Content-Type": "audio/mpeg",
         "Content-Disposition": `attachment; filename="${filename}"`,

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { Voice } from "elevenlabs-node"
+import { VoiceGenerator } from "elevenlabs-node"
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,17 +16,16 @@ export async function POST(request: NextRequest) {
     // Default voice if not provided
     const voiceToUse = voice || "Adam"
 
-    // Initialize ElevenLabs Voice
-    const elevenLabsVoice = new Voice({
+    // Initialize ElevenLabs Voice Generator
+    const voiceGenerator = new VoiceGenerator({
       apiKey: process.env.ELEVENLABS_API_KEY,
-      voiceId: getElevenLabsVoiceId(voiceToUse),
     })
 
     // Generate speech using ElevenLabs
-    const audioResponse = await elevenLabsVoice.textToSpeech(text)
+    const audioResponse = await voiceGenerator.generateVoice(text, getElevenLabsVoiceId(voiceToUse))
 
     // Return the audio file
-    return new NextResponse(audioResponse, {
+    return new NextResponse(Buffer.from(audioResponse), {
       headers: {
         "Content-Type": "audio/mpeg",
       },
