@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { getMessages, getVoiceSettings } from "./actions"
 import { MessageForm } from "@/components/message-form"
 import { MessageHistory } from "@/components/message-history"
@@ -5,7 +6,7 @@ import { VoiceTest } from "@/components/voice-test"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function Home() {
+export default async function TextToVoicePage() {
   const messages = await getMessages()
   const voiceSettings = await getVoiceSettings()
 
@@ -30,7 +31,9 @@ export default async function Home() {
             <CardDescription>Enter your message and the recipient's phone number</CardDescription>
           </CardHeader>
           <CardContent>
-            <MessageForm voiceSettings={voiceSettings} />
+            <Suspense fallback={<div>Loading form...</div>}>
+              <MessageForm voiceSettings={voiceSettings} />
+            </Suspense>
           </CardContent>
         </Card>
 

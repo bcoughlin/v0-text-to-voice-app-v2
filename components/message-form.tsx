@@ -18,22 +18,25 @@ interface MessageFormProps {
 }
 
 export function MessageForm({ voiceSettings }: MessageFormProps) {
-  const searchParams = useSearchParams()
-  const initialPhoneNumber = searchParams.get("phone") || ""
-
   const [message, setMessage] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber)
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [voice, setVoice] = useState<OpenAIVoice>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  // Update phone number if the query parameter changes
+  // Get search params safely in a useEffect to avoid SSR issues
+  const searchParams = useSearchParams()
+
   useEffect(() => {
-    if (initialPhoneNumber) {
-      setPhoneNumber(initialPhoneNumber)
+    // Only run on the client side
+    if (searchParams) {
+      const phone = searchParams.get("phone")
+      if (phone) {
+        setPhoneNumber(phone)
+      }
     }
-  }, [initialPhoneNumber])
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
