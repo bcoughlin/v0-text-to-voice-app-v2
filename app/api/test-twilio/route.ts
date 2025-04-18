@@ -1,14 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import twilio from "twilio"
 
 // Hardcoded base URL to ensure consistency
 const BASE_URL = "https://talkto.brad.llc"
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize Twilio client
-    const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-
     // Get environment variables
     const envVars = {
       TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || "Not set",
@@ -30,9 +26,17 @@ export async function GET(request: NextRequest) {
     let twilioError = null
 
     try {
-      // Just fetch account info to verify credentials
-      await twilioClient.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch()
-      twilioAccountValid = true
+      // Make a simple request to test the Twilio credentials
+      const response = await fetch(`${BASE_URL}/api/make-call/test`, {
+        method: "GET",
+      })
+
+      if (response.ok) {
+        twilioAccountValid = true
+      } else {
+        const errorData = await response.json()
+        twilioError = errorData.error
+      }
     } catch (error: any) {
       twilioError = error.message
     }

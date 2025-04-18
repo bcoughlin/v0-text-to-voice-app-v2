@@ -1,6 +1,7 @@
 import { getMessages, getVoiceSettings } from "./actions"
 import { MessageForm } from "@/components/message-form"
 import { MessageHistory } from "@/components/message-history"
+import { VoiceTest } from "@/components/voice-test"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -39,12 +40,7 @@ export default async function Home() {
             <CardDescription>Test how your message will sound without making a call</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              This feature allows you to test the text-to-speech conversion without making an actual phone call.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Enter your message, select a voice, and click "Generate Voice" to hear how it will sound.
-            </p>
+            <VoiceTest voiceSettings={voiceSettings} />
           </CardContent>
         </Card>
       </div>

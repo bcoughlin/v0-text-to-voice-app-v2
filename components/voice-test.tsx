@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/character-counter"
 import { VoiceSettings } from "@/components/voice-settings"
 import type { VoiceSetting, OpenAIVoice, OpenAIModel } from "@/types"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { Loader2, Play, Square } from "lucide-react"
 
 interface VoiceTestProps {
   voiceSettings: VoiceSetting[]
@@ -17,6 +17,8 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
   const [voice, setVoice] = useState<OpenAIVoice>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
 
   const handleGenerate = async () => {
@@ -32,9 +34,35 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
     setIsGenerating(true)
 
     try {
+      const response = await fetch("/api/text-to-speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: message,
+          voice,
+          model,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to generate speech")
+      }
+
+      const audioBlob = await response.blob()
+      const audioUrl = URL.createObjectURL(audioBlob)
+
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl
+        audioRef.current.play()
+        setIsPlaying(true)
+      }
+
       toast({
-        title: "Feature temporarily disabled",
-        description: "Voice testing is currently being updated",
+        title: "Success",
+        description: "Voice generated successfully",
       })
     } catch (error: any) {
       toast({
@@ -44,6 +72,17 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
       })
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
     }
   }
 
@@ -63,16 +102,26 @@ export function VoiceTest({ voiceSettings }: VoiceTestProps) {
         />
       </div>
 
-      <Button onClick={handleGenerate} disabled={isGenerating || !message.trim()} className="w-full">
-        {isGenerating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating...
-          </>
-        ) : (
-          "Generate Voice"
+      <div className="flex space-x-2">
+        <Button onClick={handleGenerate} disabled={isGenerating || !message.trim()} className="flex-1">
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            "Generate Voice"
+          )}
+        </Button>
+
+        {(isPlaying || audioRef.current?.src) && (
+          <Button variant="outline" size="icon" onClick={handlePlayPause} disabled={isGenerating}>
+            {isPlaying ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </Button>
         )}
-      </Button>
+      </div>
+
+      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} className="hidden" />
     </div>
   )
 }

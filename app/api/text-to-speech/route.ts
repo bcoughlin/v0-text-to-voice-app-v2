@@ -1,11 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { OpenAI } from "openai"
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export async function POST(request: NextRequest) {
   try {
     const { text, voice, model } = await request.json()
@@ -17,6 +12,11 @@ export async function POST(request: NextRequest) {
     // Default values if not provided
     const voiceToUse = voice || "alloy"
     const modelToUse = model || "tts-1"
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
 
     // Generate speech using OpenAI
     const mp3 = await openai.audio.speech.create({

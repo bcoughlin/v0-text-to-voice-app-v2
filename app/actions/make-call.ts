@@ -2,10 +2,6 @@
 
 import { getServerClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
-import twilio from "twilio"
-
-// Initialize Twilio client
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
 
 // Hardcoded base URL to ensure consistency
 const BASE_URL = "https://talkto.brad.llc"
@@ -74,24 +70,36 @@ export async function makeCall(formData: FormData) {
         throw new Error("TWILIO_PHONE_NUMBER environment variable is not set")
       }
 
-      // Make the call using Twilio
-      console.log("Initiating Twilio call...")
-      const call = await twilioClient.calls.create({
-        to: fullPhoneNumber,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        url: twimlUrl,
-        statusCallback: statusCallbackUrl,
-        statusCallbackMethod: "POST",
+      // Make the call using our API route instead of direct Twilio SDK
+      console.log("Initiating Twilio call via API route...")
+      const response = await fetch(`${BASE_URL}/api/make-call`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: fullPhoneNumber,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          url: twimlUrl,
+          statusCallback: statusCallbackUrl,
+          messageId: message.id,
+        }),
       })
 
-      console.log("Twilio call initiated successfully:", { callSid: call.sid })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to make call")
+      }
+
+      const result = await response.json()
+      console.log("Twilio call initiated successfully:", { callSid: result.sid })
 
       // Update message status and SID
       await supabase
         .from("messages")
         .update({
           status: "in-progress",
-          sid: call.sid,
+          sid: result.sid,
         })
         .eq("id", message.id)
 
