@@ -1,110 +1,95 @@
-import { getMessages, getVoiceSettings } from "./actions"
-import { MessageForm } from "@/components/message-form"
-import { MessageHistory } from "@/components/message-history"
-import { VoiceTest } from "@/components/voice-test"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
 
-export default async function Home() {
-  const messages = await getMessages()
-  const voiceSettings = await getVoiceSettings()
+import type React from "react"
 
-  // Calculate statistics
-  const totalCalls = messages.length
-  const completedCalls = messages.filter((m) => m.status === "completed").length
-  const failedCalls = messages.filter((m) => m.status === "failed").length
-  const inProgressCalls = messages.filter((m) => m.status === "in-progress" || m.status === "pending").length
-  const completionRate = totalCalls > 0 ? Math.round((completedCalls / totalCalls) * 100) : 0
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import { PhoneInput } from "@/components/phone-input"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
+import { makeQuickCall } from "./actions/make-quick-call"
+import { Loader2 } from "lucide-react"
+
+export default function HomePage() {
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
+
+  // Format the initial phone number on component mount
+  useEffect(() => {
+    // Set the initial formatted phone number
+    setPhoneNumber("(402) 477-4105")
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Basic validation
+    if (!phoneNumber.trim()) {
+      toast({
+        title: "Phone number is required",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const result = await makeQuickCall(phoneNumber)
+
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Success!",
+          description: "Your call has been initiated. You should receive it shortly.",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
-    <div className="container mx-auto py-10 space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Text to Voice Call</h1>
-        <p className="text-muted-foreground mt-2">Convert text to speech and call any phone number</p>
-      </div>
+    <div className="container mx-auto py-10 flex flex-col items-center">
+      <h1 className="text-4xl font-bold text-center">Home Page</h1>
+      <Link href="/text-to-voice" className="mt-4 text-blue-600 hover:text-blue-800 hover:underline text-lg">
+        Text to Voice
+      </Link>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Send a Voice Message</CardTitle>
-            <CardDescription>Enter your message and the recipient's phone number</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <MessageForm voiceSettings={voiceSettings} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Voice</CardTitle>
-            <CardDescription>Test how your message will sound without making a call</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <VoiceTest voiceSettings={voiceSettings} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="history">Message History</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard">
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalCalls}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed Calls</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{completedCalls}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Failed Calls</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{failedCalls}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{completionRate}%</div>
-                </CardContent>
-              </Card>
-            </div>
+      <div className="mt-8 w-full max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="phone-input" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <PhoneInput value={phoneNumber} onChange={setPhoneNumber} />
+            <p className="mt-1 text-xs text-gray-500">Format: (XXX) XXX-XXXX</p>
           </div>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Message History</CardTitle>
-              <CardDescription>View all your previous voice messages</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MessageHistory messages={messages} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Calling...
+              </>
+            ) : (
+              "Call me"
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }

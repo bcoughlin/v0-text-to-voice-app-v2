@@ -19,11 +19,11 @@ export function PhoneInput({ value, onChange }: PhoneInputProps) {
 
   const formatPhoneNumber = (input: string) => {
     // Remove all non-numeric characters
-    const cleaned = input.replace(/\D/g, "")
+    const cleaned = input.replace(/\D/g, "").substring(0, 10)
 
     // Format as (XXX) XXX-XXXX
     if (cleaned.length <= 3) {
-      return cleaned
+      return cleaned.length > 0 ? `(${cleaned}` : ""
     } else if (cleaned.length <= 6) {
       return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`
     } else {

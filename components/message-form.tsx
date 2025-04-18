@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { makeCall } from "@/app/actions/make-call"
 import { Button } from "@/components/ui/button"
 import { CharacterCounter } from "@/components/character-counter"
@@ -11,18 +11,29 @@ import { VoiceSettings } from "@/components/voice-settings"
 import type { VoiceSetting, OpenAIVoice, OpenAIModel } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 interface MessageFormProps {
   voiceSettings: VoiceSetting[]
 }
 
 export function MessageForm({ voiceSettings }: MessageFormProps) {
+  const searchParams = useSearchParams()
+  const initialPhoneNumber = searchParams.get("phone") || ""
+
   const [message, setMessage] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber)
   const [voice, setVoice] = useState<OpenAIVoice>("alloy")
   const [model, setModel] = useState<OpenAIModel>("tts-1")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+
+  // Update phone number if the query parameter changes
+  useEffect(() => {
+    if (initialPhoneNumber) {
+      setPhoneNumber(initialPhoneNumber)
+    }
+  }, [initialPhoneNumber])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
